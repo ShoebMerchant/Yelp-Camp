@@ -7,6 +7,7 @@ const UserSchema = new Schema({
   email: {
     type: String,
     unique: true,
+    required: true,
   },
   googleId: String,
 });

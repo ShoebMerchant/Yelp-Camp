@@ -15,7 +15,7 @@ const User = require("./models/user");
 const mongoSanitize = require("express-mongo-sanitize");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongo")(session);
-const findOrCreate = require("mongoose-findorcreate");
+const users = require("./controllers/users");
 
 // Security related
 const passport = require("passport");
@@ -130,6 +130,8 @@ passport.deserializeUser(function (id, done) {
   });
 });
 
+const gOAuthCallbackUrl =
+  "https://hidden-atoll-67043.herokuapp.com/auth/google/YelpCamp";
 // We also need to create new strategy for GoogleStrategy similar
 // to creating a new strategy for LocalStrategy
 passport.use(
@@ -139,23 +141,11 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       //callbackURL is what we provided as Authorized redirect URIs
       // while setting up our credentials
+      // http://localhost:3000/auth/google/YelpCamp <for production>
+      // use gOAuthCallbackUrl for deployement
       callbackURL: "http://localhost:3000/auth/google/YelpCamp",
     },
-    function (accessToken, refreshToken, profile, cb) {
-      // profile contains the user google profile info we requested for
-      console.log(profile);
-      // findOrCreate is not a mongoose method but we can install
-      // another package which is mongoose-findorcreate and use it.
-
-      // We also need to add googleId in our user model so that we can
-      // store user's profile.id so that we don't create a new user
-      // everytime user log in.
-      User.findOrCreate({ googleId: profile.id }, function (err, user) {
-        // This allows us create a user when a user tries to login
-        // but is not registered.
-        return cb(err, user);
-      });
-    }
+    users.googleOauthRegister
   )
 );
 
@@ -167,26 +157,6 @@ app.use((req, res, next) => {
   res.locals.error = req.flash("error");
   next();
 });
-
-// Google OAuth
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile"] })
-);
-
-app.get(
-  "/auth/google/YelpCamp",
-  passport.authenticate("google", {
-    failureRedirect: "/login",
-    failureFlash: "Sucessfully logged in",
-  }),
-  function (req, res) {
-    req.flash("success", "Welcome back!");
-    const redirectUrl = req.session.returnTo || "/campgrounds";
-    delete req.session.returnTo;
-    res.redirect(redirectUrl);
-  }
-);
 
 // Using Routes
 app.use("/", userRoutes);
