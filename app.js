@@ -15,10 +15,12 @@ const User = require("./models/user");
 const mongoSanitize = require("express-mongo-sanitize");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongo")(session);
+const findOrCreate = require("mongoose-findorcreate");
 
 // Security related
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const helmet = require("helmet");
 
@@ -27,7 +29,7 @@ const userRoutes = require("./routes/user");
 const campgroundRoutes = require("./routes/campgrounds");
 const reviewRoutes = require("./routes/reviews");
 //  process.env.DB_URL ||
-const dbUrl = process.env.DB_URL || "mongodb://localhost:27017/yelp-camp";
+const dbUrl = "mongodb://localhost:27017/yelp-camp";
 mongoose.connect(dbUrl, {
   useNewUrlParser: true,
   useCreateIndex: true,
@@ -118,8 +120,44 @@ app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+passport.serializeUser(function (user, done) {
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  User.findById(id, function (err, user) {
+    done(err, user);
+  });
+});
+
+// We also need to create new strategy for GoogleStrategy similar
+// to creating a new strategy for LocalStrategy
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      //callbackURL is what we provided as Authorized redirect URIs
+      // while setting up our credentials
+      callbackURL: "http://localhost:3000/auth/google/YelpCamp",
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      // profile contains the user google profile info we requested for
+      console.log(profile);
+      // findOrCreate is not a mongoose method but we can install
+      // another package which is mongoose-findorcreate and use it.
+
+      // We also need to add googleId in our user model so that we can
+      // store user's profile.id so that we don't create a new user
+      // everytime user log in.
+      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        // This allows us create a user when a user tries to login
+        // but is not registered.
+        return cb(err, user);
+      });
+    }
+  )
+);
 
 // Middleware for flash to work and locals variabls
 app.use((req, res, next) => {
@@ -129,6 +167,26 @@ app.use((req, res, next) => {
   res.locals.error = req.flash("error");
   next();
 });
+
+// Google OAuth
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get(
+  "/auth/google/YelpCamp",
+  passport.authenticate("google", {
+    failureRedirect: "/login",
+    failureFlash: "Sucessfully logged in",
+  }),
+  function (req, res) {
+    req.flash("success", "Welcome back!");
+    const redirectUrl = req.session.returnTo || "/campgrounds";
+    delete req.session.returnTo;
+    res.redirect(redirectUrl);
+  }
+);
 
 // Using Routes
 app.use("/", userRoutes);
@@ -150,10 +208,11 @@ app.use((err, req, res, next) => {
   res.status(statusCode).render("error", { err });
 });
 
-let port = process.env.PORT;
-if (port == null || port == "") {
-  port = 3000;
-}
+// process.env.PORT;
+let port = 3000;
+// if (port == null || port == "") {
+//   port = 3000;
+// }
 app.listen(port, () => {
   console.log(`Serving on port ${port}`);
 });
