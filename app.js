@@ -29,7 +29,7 @@ const userRoutes = require("./routes/user");
 const campgroundRoutes = require("./routes/campgrounds");
 const reviewRoutes = require("./routes/reviews");
 //  process.env.DB_URL ||
-const dbUrl = "mongodb://localhost:27017/yelp-camp";
+const dbUrl = process.env.DB_URL || "mongodb://localhost:27017/yelp-camp";
 mongoose.connect(dbUrl, {
   useNewUrlParser: true,
   useCreateIndex: true,
@@ -143,7 +143,7 @@ passport.use(
       // while setting up our credentials
       // http://localhost:3000/auth/google/YelpCamp <for production>
       // use gOAuthCallbackUrl for deployement
-      callbackURL: "http://localhost:3000/auth/google/YelpCamp",
+      callbackURL: gOAuthCallbackUrl,
     },
     users.googleOauthRegister
   )
@@ -180,9 +180,9 @@ app.use((err, req, res, next) => {
 
 // process.env.PORT;
 let port = 3000;
-// if (port == null || port == "") {
-//   port = 3000;
-// }
+if (port == null || port == "") {
+  port = 3000;
+}
 app.listen(port, () => {
   console.log(`Serving on port ${port}`);
 });
