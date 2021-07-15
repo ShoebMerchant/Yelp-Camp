@@ -1,4 +1,5 @@
 <% layout('layouts/boilerplate')%>
+
 <div class="container d-flex justify-content-center align-items-center mt-5">
   <div class="row">
     <div class="col-md-6 offset-md-3 col-xl-4 offset-xl-4">
@@ -54,17 +55,17 @@
               <button class="btn btn-success">Register</button>
             </div>
           </form>
-        </div>
-      </div>
-      <div class="card shadow mb-3">
-        <div class="d-grid gap-2 container pt-3">
-          <a
-            class="btn btn-block btn-social btn-google mb-3"
-            href="/auth/google"
-            role="button"
-            ><img src="/img/google.png" alt="" />
-            Sign Up with Google
-          </a>
+
+          <!-- Google btn -->
+          <div class="google-btn mt-3">
+            <div class="google-icon-wrapper">
+              <img class="google-icon" src="/img/Google__G__Logo.svg" />
+            </div>
+            <p class="btn-text">
+              <b><a href="/auth/google"> Sign Up with google</a></b>
+            </p>
+          </div>
+          <!-- google btn - End -->
         </div>
       </div>
     </div>
