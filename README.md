@@ -4,4 +4,4 @@ Edit or delete Campgrounds You have created.
 Authenticate with Googele authentication.
 
 Data stored on Mongodb Atlas and server running on heroku
-https://hidden-atoll-67043.herokuapp.com/campgrounds
+https://hidden-atoll-67043.herokuapp.com/
